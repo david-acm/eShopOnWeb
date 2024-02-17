@@ -1,13 +1,30 @@
-$appName = 'eshoponweb'
+$appName = 'eShopOnWeb'
 $location = 'eastus'
 $env = 'dev'
+$ghAccount = 'david-acm'
+
+function Get-GitHubRepoName {
+    param(
+        [string]$url
+    )
+
+    $urlParts = $url `
+        -split "/"
+    $lastPart = $urlParts[-1]
+    $repoName = $lastPart.Replace(".git", "")
+    return $repoName
+}
 
 function Cyan {
-   process {Write-Host -ForegroundColor Cyan}
+   process {Write-Host `
+        -ForegroundColor Cyan}
 }
 
 # az ad app delete `
 # --id $appId
+
+$repoName = Get-GitHubRepoName `
+    -url $(git remote get-url origin)
 
 '1. Creating app registration...'  | Cyan
 $appId = az ad app create `
@@ -25,6 +42,11 @@ $appObjectId = az ad app show `
 '2. Creating service principal...'  | Cyan
 
 $objectId = az ad sp create `
+--id $appId `
+--query '{objectId:id}'`
+-o tsv
+
+$objectId = az ad sp show `
 --id $appId `
 --query '{objectId:id}'`
 -o tsv
@@ -62,7 +84,7 @@ $tenantId = az account show `
 $content = $("{
     ""name"": ""fedid-$appName-$env-$location"",
     ""issuer"": ""https://token.actions.githubusercontent.com"",
-    ""subject"": ""repo:octo-org/octo-repo:environment:Production"",
+    ""subject"": ""repo:$ghAccount/${repoName}:ref:refs/heads/main"",
     ""description"": ""Testing"",
     ""audiences"": [
         ""api://AzureADTokenExchange""
@@ -71,7 +93,9 @@ $content = $("{
 
 $credenialFile = 'credential.json'
 $path = (ni $credenialFile -Force).FullName
-$content | Out-File -FilePath $path -Encoding ascii
+$content | Out-File `
+    -FilePath $path `
+    -Encoding ascii
 
 '4. Creating federated credential...' | Cyan
 
@@ -83,8 +107,11 @@ az ad app federated-credential create `
 
 '5. Setting secrets in GitHub...' | Cyan
 
-gh secret set AZURE_CLIENT_ID -b $appId
-gh secret set AZURE_TENANT_ID -b $tenantId
-gh secret set AZURE_SUBSCRIPTION_ID -b $subscriptionId
+gh secret set AZURE_CLIENT_ID `
+    -b $appId
+gh secret set AZURE_TENANT_ID `
+    -b $tenantId
+gh secret set AZURE_SUBSCRIPTION_ID `
+    -b $subscriptionId
 
 'Success!' | Cyan
