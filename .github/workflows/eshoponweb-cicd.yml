@@ -3,6 +3,10 @@ name: eShopOnWeb Build and Test
 #Triggers (uncomment line below to use it)
 on: [push, workflow_dispatch]
 
+permissions:
+  id-token: write
+  contents: read
+
 #Environment variables https://docs.github.com/en/actions/learn-github-actions/environment-variables
 env:
   RESOURCE-GROUP: rg-eShopOnWeb-dev-eastus
