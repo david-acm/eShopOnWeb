@@ -67,12 +67,14 @@ jobs:
       with:
         name: bicep-template
         path: bicep-template
-        
-   #Login in your azure subscription using a service principal (credentials stored as GitHub Secret in repo)
-    - name: Azure Login
+    
+   #Login in your azure subscription using a federeated id (credentials stored as GitHub Secret in repo)
+    - name: 'Az CLI login'
       uses: azure/login@v1
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
            
     # Deploy Azure WebApp using Bicep file
     - name: deploy
